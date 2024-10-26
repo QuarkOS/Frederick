@@ -52,18 +52,38 @@ public class Main {
                         .collect(Collectors.toList()));
 
 
-
+        // Buy command
         guild.upsertCommand(Commands.slash("buy", "Buy an item from the shop")
                         .addOptions(itemOption)
                         .addOption(OptionType.INTEGER, "quantity", "The quantity to buy", true))
                 .queue(command -> System.out.println("Slash command created: " + command.getName()));
 
 
+        // Checkout command
         guild.upsertCommand(Commands.slash("checkout", "Checkout the cart")
                         .addOption(OptionType.STRING, "location", "Your location", true))
                 .queue(command -> System.out.println("Slash command created: " + command.getName()));
 
+
+        // Cart command
         guild.upsertCommand(Commands.slash("cart", "Check cart contents"))
+                .queue(command -> System.out.println("Slash command created: " + command.getName()));
+
+
+        // Remove command
+        guild.upsertCommand(Commands.slash("remove", "Remove an item from the cart")
+                        .addOptions(itemOption)
+                        .addOption(OptionType.INTEGER, "quantity", "The quantity to remove", true))
+                .queue(command -> System.out.println("Slash command created: " + command.getName()));
+
+
+        // Review command
+        guild.upsertCommand(Commands.slash("suggest", "Review your experience")
+                        .addOption(OptionType.STRING, "suggestion", "Suggest a new product", true))
+                .queue(command -> System.out.println("Slash command created: " + command.getName()));
+
+        // Help command
+        guild.upsertCommand(Commands.slash("help", "Get help"))
                 .queue(command -> System.out.println("Slash command created: " + command.getName()));
     }
 

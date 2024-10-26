@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.entities.EmbedType;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 
 import java.awt.*;
 import java.io.FileReader;
@@ -58,7 +59,7 @@ public class Shop {
 
         System.out.println(item.getName() + " zum Warenkorb hinzugefügt! " + quantity + "x " + item.getPrice() + " €");
 
-        if(!cartItems.containsKey(member.getId())) {
+        if (!cartItems.containsKey(member.getId())) {
             cartItems.put(member.getId(), new ArrayList<>());
         }
 
@@ -162,7 +163,6 @@ public class Shop {
             if (orderChannel != null) {
                 MessageEmbed.AuthorInfo ai = new MessageEmbed.AuthorInfo(member.getNickname(), null, member.getAvatarUrl(), null);
                 orderChannel.sendMessageEmbeds(new MessageEmbed(null, "New order!", orderDetails.toString(), EmbedType.RICH, null, 0, null, null, ai, null, null, null, null)).queue();
-                //orderChannel.sendMessage(orderDetails.toString()).queue();
             } else {
                 System.err.println("Order channel not found.");
             }
@@ -174,13 +174,15 @@ public class Shop {
         return eb.build();
     }
 
+    // Insert order to JSON
     public static void insertOrdertoJSON(List<Item> orderList) {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         List<Item> existingOrders = new ArrayList<>();
 
         // Read existing orders from the file
         try (FileReader reader = new FileReader("orders.json")) {
-            existingOrders = gson.fromJson(reader, new TypeToken<List<Item>>() {}.getType());
+            existingOrders = gson.fromJson(reader, new TypeToken<List<Item>>() {
+            }.getType());
             if (existingOrders == null) {
                 existingOrders = new ArrayList<>();
             }
@@ -198,5 +200,72 @@ public class Shop {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    // Remove Item from cart
+    public static void removeItemFromCart(Member member, String itemToRemove, int quantity) {
+        List<Item> items = cartItems.get(member.getId());
+        if (items != null) {
+            items.removeIf(item -> {
+                if (item.getName().equals(itemToRemove)) {
+                    if (item.getQuantity() > quantity) {
+                        item.setQuantity(item.getQuantity() - quantity);
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+                return false;
+            });
+            cartItems.put(member.getId(), items);
+        }
+    }
+
+    // Review
+    public static MessageEmbed suggest(String suggestion) {
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle("Review");
+        eb.addField("Suggestion", suggestion, false);
+        eb.setColor(Color.BLUE);
+        eb.setTimestamp(Instant.now());
+
+        EmbedBuilder thanksEmbed = new EmbedBuilder();
+        thanksEmbed.setTitle("Thank you for your suggestion!");
+        thanksEmbed.setColor(Color.GREEN);
+        thanksEmbed.setTimestamp(Instant.now());
+
+        Dotenv dotenv = Dotenv.configure().directory("./").load();
+        String suggestionChannelID = dotenv.get("SUGGESTION_CHANNEL_ID");
+
+        try {
+            TextChannel suggestionChannel = Main.getJDA().getTextChannelById(suggestionChannelID);
+            if (suggestionChannel != null) {
+                suggestionChannel.sendMessageEmbeds(eb.build()).queue();
+            } else {
+                System.err.println("Suggestion channel not found.");
+            }
+        } catch (RuntimeException e) {
+            System.err.println("Failed to send message: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return thanksEmbed.build();
+    }
+
+    // Help
+    public static MessageEmbed help() {
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle("Help");
+        eb.setDescription("Here are the available commands:");
+        eb.setColor(Color.GREEN);
+        eb.addField("/shop", "Displays the shop items", false);
+        eb.addField("/buy", "Buy an item from the shop", false);
+        eb.addField("/checkout", "Checkout the cart", false);
+        eb.addField("/cart", "Check cart contents", false);
+        eb.addField("/remove", "Remove an item from the cart", false);
+        eb.addField("/suggest", "Review your experience", false);
+        eb.addField("/help", "Displays this message", false);
+        eb.setTimestamp(Instant.now());
+        return eb.build();
     }
 }

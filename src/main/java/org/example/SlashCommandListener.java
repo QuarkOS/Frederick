@@ -10,7 +10,7 @@ public class SlashCommandListener extends ListenerAdapter {
         if (event.getName().equals("shop")) {
             // Display shop items
             MessageEmbed embed = Shop.listItems();
-            event.replyEmbeds(embed).queue();
+            event.replyEmbeds(embed).setEphemeral(true).queue();
         }
 
         if (event.getName().equals("buy")) {
@@ -20,22 +20,38 @@ public class SlashCommandListener extends ListenerAdapter {
             Item item = Shop.shopItems.stream().filter(i -> i.getName().equals(itemName)).findFirst().orElse(null);
 
             if (item == null) {
-                event.reply("Item not found!").queue();
+                event.reply("Item not found!").setEphemeral(true).queue();
                 return;
             }
 
-            event.replyEmbeds(Shop.buy(event.getMember(), item, quantity)).queue();
+            event.replyEmbeds(Shop.buy(event.getMember(), item, quantity)).setEphemeral(true).queue();
         }
 
         if (event.getName().equals("checkout")) {
             String location = event.getOption("location").getAsString();
             // Display cart items
             MessageEmbed embed = Shop.checkout(event.getMember(), location);
-            event.replyEmbeds(embed).queue();
+            event.replyEmbeds(embed).setEphemeral(true).queue();
         }
 
         if (event.getName().equals("cart")) {
-            event.replyEmbeds(Shop.viewCart(event.getMember())).queue();
+            event.replyEmbeds(Shop.viewCart(event.getMember())).setEphemeral(true).queue();
+        }
+
+        if (event.getName().equals("remove")) {
+            String item = event.getOption("item").getAsString();
+            int quantity = (int) event.getOption("quantity").getAsLong();
+            Shop.removeItemFromCart(event.getMember(), item, quantity);
+            event.reply("Item removed from cart!").setEphemeral(true).queue();
+        }
+
+        if (event.getName().equals("suggest")) {
+            String suggestion = event.getOption("suggestion").getAsString();
+            event.replyEmbeds(Shop.suggest(suggestion)).setEphemeral(true).queue();
+        }
+
+        if (event.getName().equals("help")) {
+            event.replyEmbeds(Shop.help()).setEphemeral(true).queue();
         }
     }
 }
