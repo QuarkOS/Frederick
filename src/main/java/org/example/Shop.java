@@ -30,8 +30,9 @@ public class Shop {
             new Item("Lay's Paprika", 1, 10),
             new Item("Lay's Salt", 1, 20),
             new Item("M&M's", 1, 15),
-            new Item("Nic Nac's", 3, 30),
-            new Item("Skittle's", 1, 15)
+            new Item("Nic Nac's", 2.50, 30),
+            new Item("Skittle's", 1, 15),
+            new Item("Maltesers", 1, 10)
     );
 
     // Cart items
