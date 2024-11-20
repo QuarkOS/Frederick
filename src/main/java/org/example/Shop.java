@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.EmbedType;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 
@@ -30,9 +31,12 @@ public class Shop {
             new Item("Lay's Paprika", 1, 10),
             new Item("Lay's Salt", 1, 20),
             new Item("M&M's", 1, 15),
-            new Item("Nic Nac's", 2.50, 30),
+            new Item("Nic Nac's", 2.5, 30),
             new Item("Skittle's", 1, 15),
-            new Item("Maltesers", 1, 10)
+            new Item("Jumpy's", 1.7, 10),
+            new Item("Red Bull Blue Edition", 1.5, 14),
+            new Item("Red Bull Sea Blue Edition", 1.5, 24),
+            new Item("Red Bull Orange Edition", 1.5, 10)
     );
 
     // Cart items
@@ -268,5 +272,24 @@ public class Shop {
         eb.addField("/help", "Displays this message", false);
         eb.setTimestamp(Instant.now());
         return eb.build();
+    }
+
+    // Notify all about a certain message
+    public static void notifyAll(Announcement announcement) {
+        Dotenv dotenv = Dotenv.configure().directory("./").load();
+        String guildID = dotenv.get("GUILD_ID");
+
+        try {
+            User[] users = Main.getJDA().getUsers().toArray(new User[0]);
+
+            for (User user : users) {
+                user.openPrivateChannel().queue(channel -> {
+                    channel.sendMessage(announcement).queue();
+                });
+            }
+        } catch (RuntimeException e) {
+            System.err.println("Failed to send message: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
