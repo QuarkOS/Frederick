@@ -7,7 +7,9 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.commands.Command;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -48,7 +50,7 @@ public class Main {
         // Create the buy command with dynamic options
         OptionData itemOption = new OptionData(OptionType.STRING, "item", "The item to buy", true)
                 .addChoices(Shop.shopItems.stream()
-                        .map(item -> new net.dv8tion.jda.api.interactions.commands.Command.Choice(item.getName(), item.getName()))
+                        .map(item -> new Command.Choice(item.getName(), item.getName()))
                         .collect(Collectors.toList()));
 
 
@@ -99,6 +101,18 @@ public class Main {
 
         // View orders command
         guild.upsertCommand(Commands.slash("vieworders", "View all orders"))
+                .queue(command -> System.out.println("Slash command created: " + command.getName()));
+
+        // Send Announcement command
+        OptionData announcementOption = new OptionData(OptionType.STRING, "announcement", "The type of announcement", true)
+                .addChoices(
+                        Arrays.stream(Announcement.values())
+                                .map(announcement -> new Command.Choice(announcement.name(), announcement.name()))
+                                .collect(Collectors.toList())
+                );
+
+        guild.upsertCommand(Commands.slash("sendannouncement", "Send an announcement")
+                        .addOptions(announcementOption))
                 .queue(command -> System.out.println("Slash command created: " + command.getName()));
     }
 
