@@ -8,9 +8,9 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.EmbedType;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.FileReader;
@@ -31,18 +31,42 @@ public class Shop {
             new Item("Lay's Paprika", 1, 10),
             new Item("Lay's Salt", 1, 20),
             new Item("M&M's", 1, 15),
-            new Item("Nic Nac's", 2.5, 30),
+            new Item("Nic Nac's", 2.50, 30),
             new Item("Skittle's", 1, 15),
-            new Item("Jumpy's", 1.7, 10),
-            new Item("Red Bull Blue Edition", 1.5, 14),
-            new Item("Red Bull Sea Blue Edition", 1.5, 24),
-            new Item("Red Bull Orange Edition", 1.5, 10)
+            new Item("Kelly's Jumpys (SOON)", 2, 10),
+            new Item("Red Bull Sea Blue Edition (SOON)", 1.50, 10),
+            new Item("Red Bull Blue Edition (SOON)", 1.50, 10),
+            new Item("Red Bull Orange Edition (SOON)", 1.50, 10)
     );
+
+    // Static order ID
+    public static int orderID = 1;
+
+    // Logger
+    private static final Logger logger = LoggerFactory.getLogger(Shop.class);
 
     // Cart items
     public static Map<String, List<Item>> cartItems = new HashMap<>();
 
-    // Buy an item
+    // Unconfirmed orders
+    public static Map<Integer, Order> unconfirmedOrders = new HashMap<>();
+
+    // Confirmed order
+    public static Map<Integer, Order> confirmedOrders = new HashMap<>();
+
+    // Load Dotenv configuration
+    private static Dotenv loadDotenv() {
+        return Dotenv.configure().directory("./").load();
+    }
+
+    /**
+     * Buys an item and adds it to the cart.
+     *
+     * @param member   The member buying the item.
+     * @param item     The item to buy.
+     * @param quantity The quantity to buy.
+     * @return A MessageEmbed with the result of the operation.
+     */
     public static MessageEmbed buy(Member member, Item item, int quantity) {
         Double total = item.getPrice() * quantity;
 
@@ -61,8 +85,7 @@ public class Shop {
                 .addField("Item bought", item.getName() + " x" + quantity, false)
                 .addField("Total price", String.format("%.2f €", total), false);
 
-
-        System.out.println(item.getName() + " zum Warenkorb hinzugefügt! " + quantity + "x " + item.getPrice() + " €");
+        logger.info(item.getName() + " added to cart! " + quantity + "x @ " + item.getPrice() + " €");
 
         if (!cartItems.containsKey(member.getId())) {
             cartItems.put(member.getId(), new ArrayList<>());
@@ -75,7 +98,11 @@ public class Shop {
         return eb.build();
     }
 
-    // List items
+    /**
+     * Outputs all items in the shop.
+     *
+     * @return A MessageEmbed with all items in the shop.
+     */
     public static MessageEmbed listItems() {
         EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle("Shop Items");
@@ -91,7 +118,12 @@ public class Shop {
         return eb.build();
     }
 
-    // View cart
+    /**
+     * Outputs the items in the cart.
+     *
+     * @param member The member whose cart to view.
+     * @return A MessageEmbed with the items in the cart.
+     */
     public static MessageEmbed viewCart(Member member) {
         EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle("Cart");
@@ -114,7 +146,13 @@ public class Shop {
         return eb.build();
     }
 
-    // Checkout
+    /**
+     * Checks out the cart and sends the order to the order channel.
+     *
+     * @param member   The member checking out.
+     * @param location The location to deliver the order to.
+     * @return A MessageEmbed with the order details.
+     */
     public static MessageEmbed checkout(Member member, String location) {
         EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle("Checkout");
@@ -154,12 +192,18 @@ public class Shop {
         orderDetails.append(String.format("**Total**: %.2f €", total));
         insertOrdertoJSON(cartItems.get(member.getId()));
 
+        // Create Order Instance
+        Order order = new Order(cartItems.get(member.getId()));
+
+        // Send order to unconfirmed orders
+        unconfirmedOrders.put(orderID++, order);
+
         cartItems.get(member.getId()).clear();
         eb.setTimestamp(Instant.now());
         eb.addField("Total", String.format("%.2f €", total), false);
         eb.setImage("https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodedTemplate);
 
-        Dotenv dotenv = Dotenv.configure().directory("./").load();
+        Dotenv dotenv = loadDotenv();
         String guildID = dotenv.get("GUILD_ID");
         String orderChannelID = dotenv.get("ORDER_CHANNEL_ID");
 
@@ -179,7 +223,11 @@ public class Shop {
         return eb.build();
     }
 
-    // Insert order to JSON
+    /**
+     * Inserts the order into the JSON file.
+     *
+     * @param orderList The list of items in the order.
+     */
     public static void insertOrdertoJSON(List<Item> orderList) {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         List<Item> existingOrders = new ArrayList<>();
@@ -207,7 +255,13 @@ public class Shop {
         }
     }
 
-    // Remove Item from cart
+    /**
+     * Removes an item from the cart.
+     *
+     * @param member       The member whose cart to remove the item from.
+     * @param itemToRemove The item to remove.
+     * @param quantity     The quantity to remove.
+     */
     public static void removeItemFromCart(Member member, String itemToRemove, int quantity) {
         List<Item> items = cartItems.get(member.getId());
         if (items != null) {
@@ -226,7 +280,12 @@ public class Shop {
         }
     }
 
-    // Review
+    /**
+     * Suggests a feature or improvement.
+     *
+     * @param suggestion The suggestion to make.
+     * @return A MessageEmbed with the result of the operation.
+     */
     public static MessageEmbed suggest(String suggestion) {
         EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle("Review");
@@ -239,7 +298,7 @@ public class Shop {
         thanksEmbed.setColor(Color.GREEN);
         thanksEmbed.setTimestamp(Instant.now());
 
-        Dotenv dotenv = Dotenv.configure().directory("./").load();
+        Dotenv dotenv = loadDotenv();
         String suggestionChannelID = dotenv.get("SUGGESTION_CHANNEL_ID");
 
         try {
@@ -257,7 +316,11 @@ public class Shop {
         return thanksEmbed.build();
     }
 
-    // Help
+    /**
+     * Displays the help message.
+     *
+     * @return A MessageEmbed with the help message.
+     */
     public static MessageEmbed help() {
         EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle("Help");
@@ -274,22 +337,20 @@ public class Shop {
         return eb.build();
     }
 
-    // Notify all about a certain message
-    public static void notifyAll(Announcement announcement) {
-        Dotenv dotenv = Dotenv.configure().directory("./").load();
-        String guildID = dotenv.get("GUILD_ID");
+    public static boolean isItemInStock(String itemName) {
+        Item item = shopItems.stream().filter(i -> i.getName().equals(itemName)).findFirst().orElse(null);
+        item.getQuantity();
 
-        try {
-            User[] users = Main.getJDA().getUsers().toArray(new User[0]);
+        int totalItemInOrders = 0;
 
-            for (User user : users) {
-                user.openPrivateChannel().queue(channel -> {
-                    channel.sendMessage(announcement).queue();
-                });
+        for (Order order : unconfirmedOrders.values()) {
+            for (Item orderItem : order.items) {
+                if (orderItem.getName().equals(itemName)) {
+                    totalItemInOrders += orderItem.getQuantity();
+                }
             }
-        } catch (RuntimeException e) {
-            System.err.println("Failed to send message: " + e.getMessage());
-            e.printStackTrace();
         }
+
+        return item.getQuantity() - totalItemInOrders > 0;
     }
 }

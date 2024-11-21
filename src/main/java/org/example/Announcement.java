@@ -3,71 +3,53 @@ package org.example;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public enum Announcement {
 
-    PRODUCT(null, null, Announcement::printPRODUCT),
-    ONLINE(null, null),
-    BACKINSTOCK(null, null);
+    PRODUCT(Announcement::printPRODUCT),
+    ONLINE(Announcement::printONLINE),
+    BACKINSTOCK(Announcement::printBACKINSTOCK),
+    OUTOFSTOCK(Announcement::printOUTOFSTOCK);
 
-    private String message;
-    private Item item;
+    private final Function<Item, MessageEmbed> function;
 
-    Announcement(Item item, String message, Function<Item, MessageEmbed> function) {
-        this.item = item;
-        this.message = message;
-        MessageEmbed embed = function.apply(item);
+    Announcement(Function<Item, MessageEmbed> function) {
+        this.function = function;
     }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public Item getItem() {
-        return item;
-    }
-
-    public void setItem(Item item) {
-        this.item = item;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
+    public MessageEmbed createMessage(Item item) {
+        return function.apply(item);
     }
 
     public static MessageEmbed printPRODUCT(Item item) {
-        EmbedBuilder eb = new EmbedBuilder();
-
-        eb.setTitle("New Product Alert!");
-        eb.setDescription("A new product has been added to the store!");
-        eb.addField("Product Name", item.getName(), false);
-        eb.addField("Product Price", String.valueOf(item.getPrice()), false);
-        eb.addField("Product Stock", String.valueOf(item.getQuantity()), false);
-
-        eb.addField("Additional Information", message, false);
-
-        return eb.build();
+        return new EmbedBuilder()
+                .setTitle("New Product Alert!")
+                .setDescription("A new product has been added to the store!")
+                .addField("Product Name", item.getName(), false)
+                .addField("Product Price", String.valueOf(item.getPrice()), false)
+                .addField("Product Stock", String.valueOf(item.getQuantity()), false)
+                .build();
     }
 
-    public MessageEmbed printONLINE() {
-        EmbedBuilder eb = new EmbedBuilder();
-
-        eb.setTitle("@Here\nOnline Store is now open!");
-        eb.setDescription("The online store is now online and ready to take orders!");
-
-        eb.addField("Additional Information", message, false);
-        return eb.build();
+    public static MessageEmbed printONLINE(Item item) {
+        return new EmbedBuilder()
+                .setTitle("@Here\nOnline Store is now open!")
+                .setDescription("The online store is now online and ready to take orders!")
+                .build();
     }
 
-    public MessageEmbed printOUTOFSTOCK() {
-        EmbedBuilder eb = new EmbedBuilder();
+    public static MessageEmbed printBACKINSTOCK(Item item) {
+        return new EmbedBuilder()
+                .setTitle("Back in Stock!")
+                .setDescription(item.getName() + " is back in stock!")
+                .build();
+    }
 
-        eb.setTitle("Out of Stock Alert!");
-        eb.setDescription(item.getName() + " is out of stock!");
-
-        return ;
+    public static MessageEmbed printOUTOFSTOCK(Item item) {
+        return new EmbedBuilder()
+                .setTitle("Out of Stock Alert!")
+                .setDescription(item.getName() + " is out of stock!")
+                .build();
     }
 }

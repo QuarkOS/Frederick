@@ -7,6 +7,8 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 public class SlashCommandListener extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
+        var hook = event.deferReply(true).complete();
+
         if (event.getName().equals("shop")) {
             // Display shop items
             MessageEmbed embed = Shop.listItems();
@@ -24,14 +26,14 @@ public class SlashCommandListener extends ListenerAdapter {
                 return;
             }
 
-            event.replyEmbeds(Shop.buy(event.getMember(), item, quantity)).setEphemeral(true).queue();
+            hook.editOriginalEmbeds(Shop.buy(event.getMember(), item, quantity)).queue();
         }
 
         if (event.getName().equals("checkout")) {
             String location = event.getOption("location").getAsString();
             // Display cart items
             MessageEmbed embed = Shop.checkout(event.getMember(), location);
-            event.replyEmbeds(embed).setEphemeral(true).queue();
+            hook.editOriginalEmbeds(embed).queue();
         }
 
         if (event.getName().equals("cart")) {
@@ -53,5 +55,24 @@ public class SlashCommandListener extends ListenerAdapter {
         if (event.getName().equals("help")) {
             event.replyEmbeds(Shop.help()).setEphemeral(true).queue();
         }
+
+        if (event.getName().equals("confirm")) {
+            int id = (int) event.getOption("id").getAsLong();
+            Admin.confirmOrder(id, Shop.unconfirmedOrders, Shop.confirmedOrders);
+            event.reply("Order confirmed!").setEphemeral(true).queue();
+        }
+
+        if (event.getName().equals("removeorder")) {
+            int id = (int) event.getOption("id").getAsLong();
+            String reason = event.getOption("reason").getAsString();
+            Admin.removeOrder(id, reason, Shop.unconfirmedOrders);
+            event.reply("Order removed!").setEphemeral(true).queue();
+        }
+
+        if (event.getName().equals("vieworders")) {
+            hook.editOriginalEmbeds(Admin.viewAllOrders(Shop.unconfirmedOrders)).queue();
+        }
+
+
     }
 }

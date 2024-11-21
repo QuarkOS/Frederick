@@ -85,6 +85,21 @@ public class Main {
         // Help command
         guild.upsertCommand(Commands.slash("help", "Get help"))
                 .queue(command -> System.out.println("Slash command created: " + command.getName()));
+
+        // Confirm command
+        guild.upsertCommand(Commands.slash("confirm", "Confirm an order")
+                        .addOption(OptionType.INTEGER, "id", "The order ID", true))
+                .queue(command -> System.out.println("Slash command created: " + command.getName()));
+
+        // Remove order command
+        guild.upsertCommand(Commands.slash("removeorder", "Remove an order")
+                        .addOption(OptionType.INTEGER, "id", "The order ID", true)
+                        .addOption(OptionType.STRING, "reason", "The reason for removal", true))
+                .queue(command -> System.out.println("Slash command created: " + command.getName()));
+
+        // View orders command
+        guild.upsertCommand(Commands.slash("vieworders", "View all orders"))
+                .queue(command -> System.out.println("Slash command created: " + command.getName()));
     }
 
     public static JDA getJDA() {
